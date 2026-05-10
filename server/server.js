@@ -46,6 +46,10 @@ app.get("/", (req, res) => {
   res.json({ message: "Team Task Manager API is running" });
 });
 
+app.get("/api", (req, res) => {
+  res.json({ message: "API is available" });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
