@@ -24,40 +24,40 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.join(__dirname, ".env") });
 
-await connectDB();
-await seedAdmin();
-
 const app = express();
+const allowedOrigins = (process.env.CLIENT_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
+const corsOptions = {
+  credentials: true,
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
 
-// ======================
-// CORS FIX
-// ======================
+    callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+};
 
-app.use(
-  cors({
-    origin: true,
-    credentials: true,
-  })
-);
-
-
-// ======================
-// MIDDLEWARE
-// ======================
-
+app.set("trust proxy", 1);
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(morgan("dev"));
-
-
-// ======================
-// TEST ROUTES
-// ======================
 
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
     message: "Team Task Manager API is running",
+  });
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    status: "ok",
   });
 });
 
@@ -68,32 +68,45 @@ app.get("/api", (req, res) => {
   });
 });
 
-
-// ======================
-// API ROUTES
-// ======================
-
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
-
-// ======================
-// ERROR HANDLER
-// ======================
-
 app.use(notFound);
 app.use(errorHandler);
 
-
-// ======================
-// SERVER
-// ======================
-
 const PORT = process.env.PORT || 5000;
+let server;
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const shutdown = (signal) => {
+  console.log(`${signal} received, shutting down gracefully`);
+
+  if (!server) {
+    process.exit(0);
+  }
+
+  server.close(() => {
+    process.exit(0);
+  });
+};
+
+const startServer = async () => {
+  try {
+    await connectDB();
+    await seedAdmin();
+
+    server = app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Server startup failed:", error.message);
+    process.exit(1);
+  }
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
+await startServer();

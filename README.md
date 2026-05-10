@@ -84,7 +84,17 @@ npm run dev
 
 ## Deployment
 
-This project is now set up to deploy, but you must provide real production environment values.
+This repo is an isolated monorepo, so deploy `server/` and `client/` as separate Railway services.
+
+Railway setup:
+
+- Backend service root directory: `/server`
+- Frontend service root directory: `/client`
+- If Railway does not auto-detect the config file, set:
+- Backend config path: `/server/railway.json`
+- Frontend config path: `/client/railway.json`
+
+This project is set up to deploy, but you must provide real production environment values.
 
 ### Backend environment
 
@@ -116,12 +126,14 @@ VITE_API_URL=https://your-backend-domain.com/api
 
 ### Deployment checklist
 
+- Create two Railway services from the same repo, one rooted at `/server` and one rooted at `/client`
 - Use a real MongoDB Atlas connection string
 - Set a strong `JWT_SECRET`
 - Set the correct deployed frontend URL in `CLIENT_URL`
 - Set the correct deployed backend URL in `VITE_API_URL`
+- Confirm the backend healthcheck passes at `/health`
 - Confirm the backend starts successfully and seeds the admin account from env
-- Build the frontend before release with `npm run build`
+- Confirm the frontend builds and starts with `npm start`
 
 ## API Overview
 
